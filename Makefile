@@ -1,4 +1,4 @@
-CFLAGS+= -Wall -Werror -std=gnu99 -g
+CFLAGS+= -Wall -std=gnu99 -g
 LDFLAGS=-pthread
 
 HW=prgsem
@@ -13,7 +13,6 @@ all: $(MAIN_BIN)
 
 # all source files in src folder
 SRC_FILES=$(wildcard src/*.c)
-$(info src files is $(SRC_FILES))
 
 # change extensions to .o
 OBJS=$(patsubst %.c,%.o,$(SRC_FILES))
@@ -21,7 +20,7 @@ OBJS=$(patsubst %.c,%.o,$(SRC_FILES))
 # change directory to bin
 OBJS_BIN_DIR=$(patsubst %.o, bin/%.o, $(notdir $(OBJS)))
 
-CURRENT_FILE=NIC
+CURRENT_FILE=NONE
 
 $(MAIN_BIN): $(OBJS_BIN_DIR)
 	$(CC) $(OBJS_BIN_DIR) $(LDFLAGS) -o $@

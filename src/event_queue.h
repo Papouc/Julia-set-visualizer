@@ -8,6 +8,9 @@
 #define __EVENT_QUEUE_H__
 
 #include "messages.h"
+#include "pthread.h"
+
+#define QUEUE_CAPACITY 100
 
 typedef enum
 {
@@ -52,6 +55,18 @@ typedef struct
     message *msg;
   } data;
 } event;
+
+typedef struct
+{
+  int oldest;
+  int size;
+  int capacity;
+  event *data;
+
+  pthread_mutex_t queue_mtx;
+  pthread_cond_t queue_cond;
+
+} event_queue;
 
 void queue_init(void);
 void queue_cleanup(void);
