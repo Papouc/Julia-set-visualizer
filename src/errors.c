@@ -11,6 +11,9 @@ void handle_error(error err_code)
     case ALLOC_ERR:
       err_msg = "Memory allocation failure";
       break;
+    case PIPE_ERR:
+      err_msg = "Named pipe read/write failure";
+      break;
     case NO_ERR:
       break;
   }

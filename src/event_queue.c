@@ -1,7 +1,8 @@
 #include "event_queue.h"
 #include "helpers.h"
 
-event_queue main_queue;
+static event_queue main_queue;
+static bool app_quit;
 
 void queue_init(void)
 {
@@ -14,6 +15,9 @@ void queue_init(void)
   // init stuff related to threading
   pthread_mutex_init(&main_queue.queue_mtx, NULL);
   pthread_cond_init(&main_queue.queue_cond, NULL);
+
+  // set application to the running state
+  app_quit = false;
 }
 
 void queue_cleanup(void)
@@ -25,7 +29,7 @@ void queue_cleanup(void)
   {
     event current_event = queue_pop();
 
-    event_type t_with_msg = (event_type)EV_NUCLEO;
+    event_type t_with_msg = (event_type)EV_MODULE;
     if (current_event.type == t_with_msg && current_event.data.msg != NULL)
     {
       free(current_event.data.msg);
@@ -91,4 +95,18 @@ void queue_push(event ev)
   }
 
   pthread_mutex_unlock(&main_queue.queue_mtx);
+}
+
+bool should_quit()
+{
+  // bool, being 1 byte size type should be atomic
+  // thus no mutext used :D
+  return app_quit;
+}
+
+void signal_quit()
+{
+  // bool, being 1 byte size type should be atomic
+  // thus no mutext used :D
+  app_quit = true;
 }

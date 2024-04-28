@@ -1,6 +1,6 @@
 #ifndef __WORKER_H__
 #define __WORKER_H__
 
-void *work(void*);
+void *work(void *arg);
 
 #endif

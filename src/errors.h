@@ -4,7 +4,8 @@
 typedef enum
 {
   NO_ERR = 0,
-  ALLOC_ERR = 101
+  ALLOC_ERR = 101,
+  PIPE_ERR = 102
 } error;
 
 void handle_error(error err_code);

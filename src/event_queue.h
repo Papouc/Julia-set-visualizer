@@ -14,7 +14,7 @@
 
 typedef enum
 {
-  EV_NUCLEO,
+  EV_MODULE,
   EV_KEYBOARD,
   EV_NUM
 } event_source;
@@ -74,6 +74,10 @@ void queue_cleanup(void);
 event queue_pop(void);
 
 void queue_push(event ev);
+
+// application lifecycle
+bool should_quit();
+void signal_quit();
 
 #endif
 
