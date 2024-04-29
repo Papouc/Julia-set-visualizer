@@ -17,6 +17,7 @@ void *read_keyboard(void *)
   while (current_c != EXIT_KEY)
   {
     event new_event = {.source = EV_KEYBOARD, .type = EV_TYPE_NUM};
+    new_event.data.param = current_c;
 
     switch (current_c)
     {

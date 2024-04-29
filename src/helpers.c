@@ -1,5 +1,6 @@
 #include "helpers.h"
 #include "errors.h"
+#include <stdio.h>
 
 void *safe_malloc(size_t size)
 {

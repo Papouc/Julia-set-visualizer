@@ -14,12 +14,15 @@ void handle_error(error err_code)
     case PIPE_ERR:
       err_msg = "Named pipe read/write failure";
       break;
+    case MSG_SEND_ERR:
+      err_msg = "Sending message to the comp module failure";
+      break;
     case NO_ERR:
       break;
   }
 
   if (err_msg != NULL)
   {
-    fprintf(stderr, "Error: %s :D!", err_msg);
+    fprintf(stderr, "Error: %s :D!\r\n", err_msg);
   }
 }

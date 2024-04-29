@@ -59,6 +59,12 @@ int io_putc(int fd, char c)
 }
 
 /// ----------------------------------------------------------------------------
+int io_write_buf(int fd, const void *buf, size_t size)
+{
+  return write(fd, buf, size);
+}
+
+/// ----------------------------------------------------------------------------
 int io_getc(int fd)
 {
   char c;
