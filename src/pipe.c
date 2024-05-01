@@ -28,7 +28,7 @@ void *read_pipe(void *arg)
     while (io_getc_timeout(pipe_in_fd, PIPE_READ_TIMEOUT, &current_c) != PIPE_EMPTY) {}
 
     // build up message byte after byte
-    unsigned char msg_bytes[sizeof(message)];
+    unsigned char msg_bytes[sizeof(message)] = { [0] = 0 };
     int len = 0;
 
     while (!should_quit())
@@ -92,6 +92,8 @@ void construct_msg(unsigned char current_c, unsigned char msg_bytes[], int *len)
 
     // create real message from cached bytes
     message *created_msg = (message *)safe_malloc(sizeof(message));
+    init_msg(created_msg);
+
     bool result = parse_message_buf(msg_bytes, *len, created_msg);
 
     if (!result)
@@ -102,7 +104,7 @@ void construct_msg(unsigned char current_c, unsigned char msg_bytes[], int *len)
     else
     {
       // message parsed successfully, push new event to the queue
-      event new_event = {.type = EV_SERIAL, .source = EV_MODULE};
+      event new_event = { .type = EV_SERIAL, .source = EV_MODULE };
       new_event.data.msg = created_msg;
 
       queue_push(new_event);

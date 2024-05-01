@@ -17,6 +17,10 @@ void handle_error(error err_code)
     case MSG_SEND_ERR:
       err_msg = "Sending message to the comp module failure";
       break;
+    case INCORRECT_CHUNK_ERR:
+      err_msg = "Chunk alignment failure";
+    case GUI_ERR:
+      err_msg = "Graphical window failure";
     case NO_ERR:
       break;
   }

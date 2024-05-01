@@ -1,5 +1,6 @@
 #include "computation.h"
 #include "helpers.h"
+#include "math.h"
 #include <stdlib.h>
 
 // keep main computation properties
@@ -8,10 +9,10 @@ static compute_params params = {
   .c_i = 0.6,
   .n_iters = 60,
 
-  .plane_start_r = -1.6,
-  .plane_start_i = 1.1,
-  .plane_end_r = 1.6,
-  .plane_end_i = -1.1,
+  .plane_max_r = 1.6,
+  .plane_max_i = 1.1,
+  .plane_min_r = -1.6,
+  .plane_min_i = -1.1,
 
   .grid = NULL,
   .grid_w = 640,
@@ -19,6 +20,9 @@ static compute_params params = {
 
   .chunk_w = 64,
   .chunk_h = 48,
+
+  .in_progress = false,
+  .has_finished = false
 
 };
 
@@ -34,11 +38,11 @@ void init_computation(void)
   params.n_chunks = grid_pixel_cnt / chunk_pixel_cnt;
 
   // setup density
-  double plane_width = abs_val(params.plane_end_r - params.plane_start_r);
-  double plane_height = abs_val(params.plane_end_i - params.plane_start_i);
+  double plane_width = fabs(params.plane_max_r - params.plane_min_r);
+  double plane_height = fabs(params.plane_max_i - params.plane_min_i);
 
-  params.density_r = plane_width / ((double)params.grid_w);
-  params.density_i = plane_height / ((double)params.grid_h);
+  params.density_r = (plane_width / (double)params.grid_w);
+  params.density_i = -(plane_height / (double)params.grid_h);
 }
 
 void tidy_computation(void)
@@ -62,6 +66,12 @@ bool has_finished(void)
 {
   // computation status getter
   return params.has_finished;
+}
+
+void get_grid_size(int *width, int *height)
+{
+  *width = params.grid_w;
+  *height = params.grid_h;
 }
 
 bool fill_set_compute_msg(message *msg)
@@ -93,5 +103,110 @@ bool fill_set_compute_msg(message *msg)
 
 bool fill_compute_msg(message *msg)
 {
-  return true;
+  // "start computing!!" message construction
+  if (!is_in_progress())
+  {
+    // first chunk init
+    params.chunk_id = 0;
+    params.chunk_start_r = params.plane_min_r;
+    params.chunk_start_i = params.plane_max_i;
+
+    // draw from the left top corner
+    params.draw_x = params.draw_y = 0;
+
+    params.in_progress = true;
+  }
+  else
+  {
+    // next chunk init
+    params.chunk_id++;
+
+    // move drawing cursor one chunk to the right
+    params.draw_x += params.chunk_w;
+    params.chunk_start_r += params.chunk_w * params.density_r;
+
+    if (params.draw_x >= params.grid_w)
+    {
+      // move cursor to the left side, one line down
+      params.draw_x = 0;
+      params.draw_y += params.chunk_h;
+
+      // move the chunk in complex plane
+      params.chunk_start_r = params.plane_min_r;
+      params.chunk_start_i += params.chunk_h * params.density_i;
+    }
+  }
+
+  if (is_in_progress())
+  {
+    // fill message (for any state of computation)
+    msg->data.compute.cid = params.chunk_id;
+
+    msg->data.compute.re = params.chunk_start_r;
+    msg->data.compute.im = params.chunk_start_i;
+
+    msg->data.compute.n_re = params.chunk_w;
+    msg->data.compute.n_im = params.chunk_h;
+  }
+
+  return is_in_progress();
+}
+
+error update_grid(msg_compute_data *data)
+{
+  error err_code = (data->cid == params.chunk_id) ? NO_ERR : INCORRECT_CHUNK_ERR;
+
+  if (err_code == NO_ERR)
+  {
+    // extract the pos within the chunk
+    int x_in_chunk = data->i_re;
+    int y_in_chunk = data->i_im;
+
+    // jump to the current line + index in that line
+    int skipped_lines_n = (params.draw_y + y_in_chunk) * params.grid_w;
+    int write_index = skipped_lines_n + (params.draw_x + x_in_chunk);
+
+    int max_boundary = params.grid_w * params.grid_h;
+    if (write_index >= 0 && write_index < max_boundary)
+    {
+      params.grid[write_index] = data->iter;
+    }
+
+    // image completely drawn
+    if (params.chunk_id + 1 >= params.n_chunks)
+    {
+      params.has_finished = true;
+      stop_computation();
+    }
+  }
+
+  return err_code;
+}
+
+error colorize_image(int width, int height, uint8_t *image)
+{
+  // check if desired image matches grid params
+  if (params.grid_w != width || params.grid_h != height)
+  {
+    return GUI_ERR;
+  }
+
+  int pixel_cnt = width * height;
+  for (int pixel_i = 0; pixel_i < pixel_cnt; pixel_i++)
+  {
+    // t = k/n
+    double t = (double)params.grid[pixel_i] / (double)params.n_iters;
+
+    // t_complement = 1.0 - t
+    double t_co = 1.0 - t;
+
+    // put RGB values to the image
+    *(image + R_OFFSET) = (uint8_t)(9.0 * pow(t_co, 1.0) * pow(t, 3.0) * 255.0);
+    *(image + G_OFFSET) = (uint8_t)(15.0 * pow(t_co, 2.0) * pow(t, 2.0) * 255);
+    *(image + B_OFFSET) = (uint8_t)(8.5 * pow(t_co, 3.0) * pow(t, 1.0) * 255);
+
+    image += RGB_CNT;
+  }
+
+  return NO_ERR;
 }

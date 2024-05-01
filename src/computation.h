@@ -6,6 +6,11 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#define R_OFFSET 0
+#define G_OFFSET 1
+#define B_OFFSET 2
+#define RGB_CNT 3
+
 typedef struct
 {
   // constant c
@@ -16,11 +21,11 @@ typedef struct
   int n_iters;
 
   // section of the imaginary plane
-  double plane_start_r;
-  double plane_start_i;
+  double plane_max_r;
+  double plane_max_i;
 
-  double plane_end_r;
-  double plane_end_i;
+  double plane_min_r;
+  double plane_min_i;
 
   // image grid
   int grid_w;
@@ -32,11 +37,15 @@ typedef struct
   double density_r;
   double density_i;
 
+  // where to draw current chunk (in the grid)
+  int draw_x;
+  int draw_y;
+
   // chunk info
-  int chunk_r;  // start real axis
-  int chunk_i;  // start complex axis
-  int chunk_id; // chunk id
-  int n_chunks; // number to complete entire image
+  double chunk_start_r; // start real axis
+  double chunk_start_i; // start complex axis
+  int chunk_id;         // chunk id
+  int n_chunks;         // number to complete entire image
 
   // chznk size (must fit into char type)
   uint8_t chunk_w;
@@ -56,8 +65,12 @@ void stop_computation(void);
 bool fill_set_compute_msg(message *msg);
 bool fill_compute_msg(message *msg);
 
-// computation state
+error update_grid(msg_compute_data *data);
+error colorize_image(int width, int height, uint8_t *image);
+
+// computation state (getters...)
 bool is_in_progress(void);
 bool has_finished(void);
+void get_grid_size(int *width, int *height);
 
 #endif

@@ -1,6 +1,7 @@
 #include "helpers.h"
 #include "errors.h"
 #include <stdio.h>
+#include <string.h>
 
 void *safe_malloc(size_t size)
 {
@@ -27,12 +28,11 @@ void safe_realloc(void **mem, size_t size)
   *mem = temp;
 }
 
-double abs_val(double num)
+void init_msg(message *new_msg)
 {
-  if (num < 0.0)
-  {
-    num = -num;
-  }
-
-  return num;
+  // properly initialize dynamically allocated message in order
+  // to prevent valgrind memory errors
+  new_msg->cksum = 0;
+  new_msg->type = 0;
+  memset(&(new_msg->data), 0, sizeof(new_msg->data));
 }

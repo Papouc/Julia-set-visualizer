@@ -1,5 +1,5 @@
 CFLAGS+= -Wall -std=gnu99 -g
-LDFLAGS=-pthread
+LDFLAGS=-pthread -lm
 
 HW=prgsem
 MAIN_BIN=bin/prgsem-main

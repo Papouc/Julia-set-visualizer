@@ -1,5 +1,6 @@
 #include "worker.h"
 #include "computation.h"
+#include "gui.h"
 #include "helpers.h"
 #include "keyboard.h"
 #include "prg_io_nonblock.h"
@@ -21,8 +22,17 @@ void *work(void *arg)
   disable_sigpipe();
   init_computation();
 
+  // initialize graphical window (may fail)
+  *err_code = init_gui();
+
   while (!should_quit())
   {
+    if (*err_code != NO_ERR)
+    {
+      // application error, initialize termination
+      signal_quit();
+    }
+
     event current_event = queue_pop();
 
     if (current_event.type == EV_QUIT)
@@ -42,13 +52,10 @@ void *work(void *arg)
       // possibly send something to the module
       *err_code = process_keyboard_event(current_event, msg_bytes, pipe_out_fd);
     }
-
-    if (*err_code != NO_ERR)
-    {
-      // application error, initialize termination
-      signal_quit();
-    }
   }
+
+  tidy_computation();
+  tidy_gui();
 
   pthread_exit((void *)err_code);
   return NULL;
@@ -67,17 +74,20 @@ error process_module_event(event m_event)
     case MSG_ERROR:
       fprintf(stderr, "Previous command error :D!\n");
       break;
+    case MSG_ABORT:
+      fprintf(stderr, "Abort recieved from module :D!\n");
+      break;
     case MSG_DONE:
-      fprintf(stdout, "Computation done :D!\n");
+      err_code = handle_msg_done(recieved_msg);
       break;
     case MSG_VERSION:
-      handle_msg_version(recieved_msg);
+      err_code = handle_msg_version(recieved_msg);
       break;
     case MSG_STARTUP:
-      handle_startup_msg(recieved_msg);
+      err_code = handle_startup_msg(recieved_msg);
       break;
     case MSG_COMPUTE_DATA:
-      handle_compute_data(recieved_msg);
+      err_code = handle_compute_data(recieved_msg);
       break;
     default:
       break;
@@ -150,7 +160,7 @@ error process_keyboard_event(event k_event, unsigned char msg_bytes[], int pipe_
   return err_code;
 }
 
-error handle_msg_version(message const *msg)
+error handle_msg_version(message *msg)
 {
   // extract version info from the message
   int major = msg->data.version.major;
@@ -161,7 +171,7 @@ error handle_msg_version(message const *msg)
   return NO_ERR;
 }
 
-error handle_startup_msg(message const *msg)
+error handle_startup_msg(message *msg)
 {
   // exrract string from the message
   char *startup_msg = (char *)msg->data.startup.message;
@@ -170,10 +180,33 @@ error handle_startup_msg(message const *msg)
   return NO_ERR;
 }
 
-error handle_compute_data(message const *msg)
+error handle_compute_data(message *msg)
 {
   // redirect processed data to computation compile unit
-  return NO_ERR;
+  error err_code = update_grid(&msg->data.compute_data);
+  return err_code;
+}
+
+error handle_msg_done(message *msg)
+{
+  error err_code = refresh_gui();
+
+  if (err_code == NO_ERR)
+  {
+    if (has_finished())
+    {
+      // entire image has been computed
+      fprintf(stdout, "Computation done :D!\n");
+    }
+    else
+    {
+      // request computation of the next chunk
+      event compute_next_e = { .type = EV_COMPUTE, .source = EV_KEYBOARD };
+      queue_push(compute_next_e);
+    }
+  }
+
+  return err_code;
 }
 
 void handle_send_failure(message_type msg_type)
