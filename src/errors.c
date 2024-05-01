@@ -23,6 +23,6 @@ void handle_error(error err_code)
 
   if (err_msg != NULL)
   {
-    fprintf(stderr, "Error: %s :D!\r\n", err_msg);
+    fprintf(stderr, "Error: %s :D!\n", err_msg);
   }
 }

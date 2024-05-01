@@ -1,5 +1,7 @@
 #include "worker.h"
+#include "computation.h"
 #include "helpers.h"
+#include "keyboard.h"
 #include "prg_io_nonblock.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,14 +11,15 @@ void *work(void *arg)
   error *err_code = safe_malloc(sizeof(error));
   *err_code = NO_ERR;
 
-  // block execution until the pipe is opened for reading by comp module
+  // wait until the pipe is opened for reading by comp module
   char *pipe_name = (char *)arg;
-  int pipe_out_fd = io_open_write(pipe_name);
+  int pipe_out_fd = open_pipe(pipe_name);
 
   // allocate bytes arr only once
   unsigned char msg_bytes[sizeof(message)];
 
-  queue_init();
+  disable_sigpipe();
+  init_computation();
 
   while (!should_quit())
   {
@@ -47,8 +50,6 @@ void *work(void *arg)
     }
   }
 
-  queue_cleanup();
-
   pthread_exit((void *)err_code);
   return NULL;
 }
@@ -56,17 +57,18 @@ void *work(void *arg)
 error process_module_event(event m_event)
 {
   error err_code = NO_ERR;
-  printf("Work to be done :D\r\n");
 
   message *recieved_msg = m_event.data.msg;
   switch (recieved_msg->type)
   {
     case MSG_OK:
-      fprintf(stdout, "Confirmed");
+      fprintf(stdout, "Confirmed :D!\n");
+      break;
     case MSG_ERROR:
-      fprintf(stderr, "Previous command error");
+      fprintf(stderr, "Previous command error :D!\n");
       break;
     case MSG_DONE:
+      fprintf(stdout, "Computation done :D!\n");
       break;
     case MSG_VERSION:
       handle_msg_version(recieved_msg);
@@ -91,9 +93,9 @@ error process_keyboard_event(event k_event, unsigned char msg_bytes[], int pipe_
 {
   error err_code = NO_ERR;
 
-  printf("Keyboard event :D\r\n");
+  message new_msg = { .type = MSG_NBR };
+  bool prep_success = true;
 
-  message new_msg = {.type = MSG_NBR};
   switch (k_event.type)
   {
     case EV_GET_VERSION:
@@ -101,9 +103,11 @@ error process_keyboard_event(event k_event, unsigned char msg_bytes[], int pipe_
       break;
     case EV_SET_COMPUTE:
       new_msg.type = MSG_SET_COMPUTE;
+      prep_success = fill_set_compute_msg(&new_msg);
       break;
     case EV_COMPUTE:
       new_msg.type = MSG_COMPUTE;
+      prep_success = fill_compute_msg(&new_msg);
       break;
     case EV_ABORT:
       new_msg.type = MSG_ABORT;
@@ -112,8 +116,12 @@ error process_keyboard_event(event k_event, unsigned char msg_bytes[], int pipe_
       break;
   }
 
-  // check if this type of event sends a message
-  if (new_msg.type != MSG_NBR)
+  // check if this type of event sends a message (and that the message is valid)
+  if (!prep_success)
+  {
+    handle_send_failure(new_msg.type);
+  }
+  else if (new_msg.type != MSG_NBR)
   {
     // send msg event
 
@@ -125,7 +133,7 @@ error process_keyboard_event(event k_event, unsigned char msg_bytes[], int pipe_
     if (result)
     {
       // write the message to the pipe
-      io_write_buf(pipe_fd, msg_bytes, msg_len);
+      err_code = (io_write_buf(pipe_fd, msg_bytes, msg_len) >= 0) ? NO_ERR : MSG_SEND_ERR;
     }
     else
     {
@@ -144,18 +152,20 @@ error process_keyboard_event(event k_event, unsigned char msg_bytes[], int pipe_
 
 error handle_msg_version(message const *msg)
 {
+  // extract version info from the message
   int major = msg->data.version.major;
   int minor = msg->data.version.minor;
   int patch = msg->data.version.patch;
-  fprintf(stdout, "Version: %d.%d.%d\r\n", major, minor, patch);
+  fprintf(stdout, "Version: %d.%d.%d\n", major, minor, patch);
 
   return NO_ERR;
 }
 
 error handle_startup_msg(message const *msg)
 {
+  // exrract string from the message
   char *startup_msg = (char *)msg->data.startup.message;
-  fprintf(stdout, "Startup message: %s\r\n", startup_msg);
+  fprintf(stdout, "Startup message: %s\n", startup_msg);
 
   return NO_ERR;
 }
@@ -164,4 +174,40 @@ error handle_compute_data(message const *msg)
 {
   // redirect processed data to computation compile unit
   return NO_ERR;
+}
+
+void handle_send_failure(message_type msg_type)
+{
+  char *warning_msg = NULL;
+  switch (msg_type)
+  {
+    case MSG_SET_COMPUTE:
+      warning_msg = "failed to send set compute message";
+      break;
+    case MSG_COMPUTE:
+      warning_msg = "failed to send compute message";
+      break;
+    default:
+      warning_msg = "failed to send message";
+      break;
+  }
+
+  fprintf(stderr, "Warning: %s :D!\n", warning_msg);
+}
+
+int open_pipe(char *pipe_name)
+{
+  fprintf(stdout, "Waiting for comp module to connect (press %c to interrupt) :D!\n", (char)EXIT_KEY);
+
+  // wait until the pipe is opened for reading by comp module
+  // do not block thread, still needes to react to possible quit
+  int pipe_out_fd = PIPE_NOT_OPENED;
+  while (pipe_out_fd == PIPE_NOT_OPENED && !should_quit())
+  {
+    pipe_out_fd = io_open_write(pipe_name);
+  }
+
+  fprintf(stdout, "Comp module connected :D!\n");
+
+  return pipe_out_fd;
 }

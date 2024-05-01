@@ -26,3 +26,13 @@ void safe_realloc(void **mem, size_t size)
 
   *mem = temp;
 }
+
+double abs_val(double num)
+{
+  if (num < 0.0)
+  {
+    num = -num;
+  }
+
+  return num;
+}

@@ -76,8 +76,8 @@ event queue_pop(void);
 void queue_push(event ev);
 
 // application lifecycle
-bool should_quit();
-void signal_quit();
+bool should_quit(void);
+void signal_quit(void);
 
 #endif
 

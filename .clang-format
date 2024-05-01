@@ -7,3 +7,4 @@ ColumnLimit: 0
 InsertNewlineAtEOF: true
 AllowShortBlocksOnASingleLine: true
 AllowShortLoopsOnASingleLine: true
+Cpp11BracedListStyle: false

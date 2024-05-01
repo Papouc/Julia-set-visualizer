@@ -97,14 +97,14 @@ void queue_push(event ev)
   pthread_mutex_unlock(&main_queue.queue_mtx);
 }
 
-bool should_quit()
+bool should_quit(void)
 {
   // bool, being 1 byte size type should be atomic
   // thus no mutext used :D
   return app_quit;
 }
 
-void signal_quit()
+void signal_quit(void)
 {
   // bool, being 1 byte size type should be atomic
   // thus no mutext used :D

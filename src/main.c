@@ -24,6 +24,9 @@ int main(int argc, char *argv[])
   char *pipe_in = (argc > 1) ? argv[1] : default_pipe_in;
   char *pipe_out = (argc > 2) ? argv[2] : default_pipe_out;
 
+  // initialize app's main queue before starting any of the threads
+  queue_init();
+
   // create threads (+ pass pipes/data)
   pthread_t threads[THREAD_COUNT];
   pthread_create(&threads[0], NULL, read_keyboard, NULL);
@@ -46,11 +49,14 @@ int main(int argc, char *argv[])
     if (thread_err_code != NO_ERR)
     {
       err_code = thread_err_code;
+      handle_error(err_code);
     }
 
     free(thread_ret);
   }
 
-  handle_error(err_code);
+  // deinitialize the app's main queue
+  queue_cleanup();
+
   return err_code;
 }

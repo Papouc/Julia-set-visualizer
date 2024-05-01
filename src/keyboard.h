@@ -3,6 +3,8 @@
 
 #include <stdbool.h>
 
+#define STD_IN_FD 0
+
 typedef enum
 {
   GET_VERSION_KEY = 'g',

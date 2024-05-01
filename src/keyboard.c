@@ -2,6 +2,7 @@
 #include "errors.h"
 #include "event_queue.h"
 #include "helpers.h"
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <termios.h>
@@ -14,9 +15,9 @@ void *read_keyboard(void *)
   int current_c = getchar();
 
   // map keypress to emitted event type
-  while (current_c != EXIT_KEY)
+  while (current_c != EXIT_KEY && !should_quit())
   {
-    event new_event = {.source = EV_KEYBOARD, .type = EV_TYPE_NUM};
+    event new_event = { .source = EV_KEYBOARD, .type = EV_TYPE_NUM };
     new_event.data.param = current_c;
 
     switch (current_c)
@@ -59,7 +60,7 @@ void *read_keyboard(void *)
   switch_raw_mode(false);
 
   // create application end event
-  event exit_event = {.type = EV_QUIT, .source = EV_KEYBOARD};
+  event exit_event = { .type = EV_QUIT, .source = EV_KEYBOARD };
   queue_push(exit_event);
 
   // entire application should end
@@ -81,12 +82,23 @@ void switch_raw_mode(bool on)
 
   if (!on)
   {
+    // remove non blocking flag from stdin
+    int flags = fcntl(STD_IN_FD, F_GETFL, 0);
+    flags &= ~O_NONBLOCK;
+    fcntl(STD_IN_FD, F_SETFL, flags);
+
+    // set termios back to original state
     tcsetattr(STDIN_FILENO, TCSANOW, &tioOld);
   }
   else
   {
-    tioOld = tio;    // backup original state
-    cfmakeraw(&tio); // enable raw mode
+    // backup original state
+    tioOld = tio;
+
+    // set non blocking input
+    fcntl(STD_IN_FD, F_SETFL, O_NONBLOCK);
+    cfmakeraw(&tio);      // enable raw mode
+    tio.c_oflag |= OPOST; // enable output post processing
     tcsetattr(STDIN_FILENO, TCSANOW, &tio);
   }
 }

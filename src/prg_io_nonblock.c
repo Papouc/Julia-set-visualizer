@@ -6,6 +6,7 @@
 
 #include <errno.h>
 #include <fcntl.h>
+#include <signal.h>
 #include <stdio.h>
 #include <termios.h>
 #include <unistd.h>
@@ -41,9 +42,8 @@ int io_open_read(const char *fname)
 /// ----------------------------------------------------------------------------
 int io_open_write(const char *fname)
 {
-  // Be aware that the opening named pipe for writing is blocked until the pipe is opened for reading.
-  // Thus, run a program that opens the pipe or call, e.g., 'tail -f fname', where 'fname' is the filename name of the named pipe being opened for writing.
-  return io_open(fname, O_WRONLY);
+  // try to open pipe for writing in non blocking mode
+  return io_open(fname, O_WRONLY | O_NONBLOCK);
 }
 
 /// ----------------------------------------------------------------------------
@@ -62,6 +62,14 @@ int io_putc(int fd, char c)
 int io_write_buf(int fd, const void *buf, size_t size)
 {
   return write(fd, buf, size);
+}
+
+/// ----------------------------------------------------------------------------
+void disable_sigpipe(void)
+{
+  // disable SIGPIPE error in order to handle possible write errors
+  // based on write functions's return value
+  signal(SIGPIPE, SIG_IGN);
 }
 
 /// ----------------------------------------------------------------------------
