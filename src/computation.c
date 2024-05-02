@@ -22,7 +22,8 @@ static compute_params params = {
   .chunk_h = 48,
 
   .in_progress = false,
-  .has_finished = false
+  .has_finished = true,
+  .aborted = false
 
 };
 
@@ -51,9 +52,22 @@ void tidy_computation(void)
   params.grid = NULL;
 }
 
-void stop_computation(void)
+void abort_computation(void)
 {
-  params.in_progress = false;
+  // "freeze" computation in current state
+  params.aborted = true;
+}
+
+void unabort_computation(void)
+{
+  // "unfreeze" computation in current state
+  params.aborted = false;
+}
+
+bool is_aborted(void)
+{
+  // computation status getter
+  return params.aborted;
 }
 
 bool is_in_progress(void)
@@ -176,7 +190,8 @@ error update_grid(msg_compute_data *data)
     if (params.chunk_id + 1 >= params.n_chunks)
     {
       params.has_finished = true;
-      stop_computation();
+      params.in_progress = false;
+      params.aborted = false;
     }
   }
 

@@ -54,13 +54,15 @@ typedef struct
   // computation status
   bool in_progress;
   bool has_finished;
+  bool aborted;
 
 } compute_params;
 
 // computation control
 void init_computation(void);
 void tidy_computation(void);
-void stop_computation(void);
+void abort_computation(void);
+void unabort_computation(void);
 
 bool fill_set_compute_msg(message *msg);
 bool fill_compute_msg(message *msg);
@@ -71,6 +73,7 @@ error colorize_image(int width, int height, uint8_t *image);
 // computation state (getters...)
 bool is_in_progress(void);
 bool has_finished(void);
+bool is_aborted(void);
 void get_grid_size(int *width, int *height);
 
 #endif

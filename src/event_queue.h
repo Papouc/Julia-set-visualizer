@@ -16,6 +16,7 @@ typedef enum
 {
   EV_MODULE,
   EV_KEYBOARD,
+  EV_APP,
   EV_NUM
 } event_source;
 

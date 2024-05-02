@@ -52,6 +52,11 @@ void *work(void *arg)
       // possibly send something to the module
       *err_code = process_keyboard_event(current_event, msg_bytes, pipe_out_fd);
     }
+    else if (current_event.source == EV_APP)
+    {
+      // handle event coming from THIS app
+      *err_code = process_app_event(current_event, msg_bytes, pipe_out_fd);
+    }
   }
 
   tidy_computation();
@@ -75,6 +80,7 @@ error process_module_event(event m_event)
       fprintf(stderr, "Previous command error :D!\n");
       break;
     case MSG_ABORT:
+      abort_computation();
       fprintf(stderr, "Abort recieved from module :D!\n");
       break;
     case MSG_DONE:
@@ -116,10 +122,13 @@ error process_keyboard_event(event k_event, unsigned char msg_bytes[], int pipe_
       prep_success = fill_set_compute_msg(&new_msg);
       break;
     case EV_COMPUTE:
+      // manually instruct to continue computation
+      unabort_computation();
       new_msg.type = MSG_COMPUTE;
       prep_success = fill_compute_msg(&new_msg);
       break;
     case EV_ABORT:
+      abort_computation();
       new_msg.type = MSG_ABORT;
       break;
     default:
@@ -133,28 +142,47 @@ error process_keyboard_event(event k_event, unsigned char msg_bytes[], int pipe_
   }
   else if (new_msg.type != MSG_NBR)
   {
-    // send msg event
-
-    int msg_len = 0;
-
-    // create message content based on msg_type
-    bool result = fill_message_buf(&new_msg, msg_bytes, sizeof(message), &msg_len);
-
-    if (result)
-    {
-      // write the message to the pipe
-      err_code = (io_write_buf(pipe_fd, msg_bytes, msg_len) >= 0) ? NO_ERR : MSG_SEND_ERR;
-    }
-    else
-    {
-      // failed to send message, signal error
-      err_code = MSG_SEND_ERR;
-    }
+    // send chosen message
+    err_code = send_msg(&new_msg, msg_bytes, pipe_fd);
   }
   else
   {
     // local event
     // TODO: EV_RESET_CHUNK, EV_CLEAR_BUFFER, EV_REFRESH, EV_COMPUTE_CPU
+  }
+
+  return err_code;
+}
+
+error process_app_event(event a_event, unsigned char msg_bytes[], int pipe_fd)
+{
+  // handle special types of events enqueued by this app
+  error err_code = NO_ERR;
+
+  message new_msg = { .type = MSG_NBR };
+  bool prep_success = false;
+
+  // automatic next chunk computation
+  // (do not require to keypress to compute every chunk)
+  if (a_event.type == EV_COMPUTE)
+  {
+    // only set message type if not aborted
+    new_msg.type = is_aborted() ? MSG_NBR : MSG_COMPUTE;
+
+    if (new_msg.type == MSG_COMPUTE)
+    {
+      prep_success = fill_compute_msg(&new_msg);
+    }
+  }
+
+  if (!prep_success && new_msg.type == MSG_COMPUTE)
+  {
+    // message type set, but failed to fill
+    handle_send_failure(new_msg.type);
+  }
+  else if (new_msg.type == MSG_COMPUTE)
+  {
+    err_code = send_msg(&new_msg, msg_bytes, pipe_fd);
   }
 
   return err_code;
@@ -201,7 +229,8 @@ error handle_msg_done(message *msg)
     else
     {
       // request computation of the next chunk
-      event compute_next_e = { .type = EV_COMPUTE, .source = EV_KEYBOARD };
+      // by special type of (me to me) event
+      event compute_next_e = { .type = EV_COMPUTE, .source = EV_APP };
       queue_push(compute_next_e);
     }
   }
@@ -240,7 +269,35 @@ int open_pipe(char *pipe_name)
     pipe_out_fd = io_open_write(pipe_name);
   }
 
-  fprintf(stdout, "Comp module connected :D!\n");
+  if (pipe_out_fd != PIPE_NOT_OPENED)
+  {
+    fprintf(stdout, "Comp module connected :D!\n");
+  }
 
   return pipe_out_fd;
+}
+
+error send_msg(message *msg, unsigned char msg_bytes[], int pipe_fd)
+{
+  // write message to the named pipe described by provided
+  // file descriptor
+  error err_code = NO_ERR;
+
+  int msg_len = 0;
+
+  // create message content based on msg_type
+  bool result = fill_message_buf(msg, msg_bytes, sizeof(message), &msg_len);
+
+  if (result)
+  {
+    // write the message to the pipe
+    err_code = (io_write_buf(pipe_fd, msg_bytes, msg_len) >= 0) ? NO_ERR : MSG_SEND_ERR;
+  }
+  else
+  {
+    // failed to send message, signal error
+    err_code = MSG_SEND_ERR;
+  }
+
+  return err_code;
 }
