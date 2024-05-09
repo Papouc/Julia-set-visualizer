@@ -56,6 +56,8 @@ typedef struct
   bool has_finished;
   bool aborted;
 
+  bool erase_scheluded;
+
 } compute_params;
 
 // computation control
@@ -75,5 +77,9 @@ bool is_in_progress(void);
 bool has_finished(void);
 bool is_aborted(void);
 void get_grid_size(int *width, int *height);
+
+// raw computation manipulation
+void erase_grid_contents();
+void reset_computation();
 
 #endif

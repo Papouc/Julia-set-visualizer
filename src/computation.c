@@ -23,8 +23,9 @@ static compute_params params = {
 
   .in_progress = false,
   .has_finished = true,
-  .aborted = false
+  .aborted = false,
 
+  .erase_scheluded = false,
 };
 
 void init_computation(void)
@@ -194,6 +195,13 @@ error update_grid(msg_compute_data *data)
 {
   error err_code = (data->cid == params.chunk_id) ? NO_ERR : INCORRECT_CHUNK_ERR;
 
+  if (data->cid == 0 && params.erase_scheluded)
+  {
+    // make sure to draw onto blank plane after erase is scheluded
+    erase_grid_contents();
+    params.erase_scheluded = false;
+  }
+
   if (err_code == NO_ERR)
   {
     // extract the pos within the chunk
@@ -248,4 +256,22 @@ error colorize_image(int width, int height, uint8_t *image)
   }
 
   return NO_ERR;
+}
+
+void erase_grid_contents()
+{
+  // dump all current values in the computation grid
+  // re-initialize it to all zeros
+  int size = params.grid_h * params.grid_w * sizeof(uint8_t);
+  init_arr(params.grid, size);
+}
+
+void reset_computation()
+{
+  // prepare state in order to recall set compute
+  params.has_finished = false;
+  params.in_progress = false;
+
+  // schelude erase (buffer will be erased during next grid update)
+  params.erase_scheluded = true;
 }

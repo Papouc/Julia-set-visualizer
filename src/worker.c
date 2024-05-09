@@ -3,6 +3,7 @@
 #include "gui.h"
 #include "helpers.h"
 #include "keyboard.h"
+#include "local_processing.h"
 #include "prg_io_nonblock.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -147,7 +148,7 @@ error process_keyboard_event(event k_event, unsigned char msg_bytes[], int pipe_
   else
   {
     // local event
-    // TODO: EV_RESET_CHUNK, EV_CLEAR_BUFFER, EV_REFRESH, EV_COMPUTE_CPU
+    err_code = handle_local_keyboard_ev(k_event);
   }
 
   return err_code;
@@ -162,7 +163,7 @@ error process_app_event(event a_event, unsigned char msg_bytes[], int pipe_fd)
   bool prep_success = false;
 
   // automatic next chunk computation
-  // (do not require to keypress to compute every chunk)
+  // (do not require keypress to compute every chunk)
   if (a_event.type == EV_COMPUTE)
   {
     // only set message type if not aborted
@@ -173,7 +174,7 @@ error process_app_event(event a_event, unsigned char msg_bytes[], int pipe_fd)
       prep_success = fill_compute_msg(&new_msg);
     }
   }
-
+  
   if (!prep_success && new_msg.type != MSG_NBR)
   {
     // message type set, but failed to fill
