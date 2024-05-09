@@ -5,7 +5,9 @@
 #include <stdlib.h>
 
 static gui_params params = {
-  .image = NULL
+  .image = NULL,
+  .width = 0,
+  .height = 0
 };
 
 error init_gui(void)
@@ -18,6 +20,7 @@ error init_gui(void)
   // + allocate space to hold the image
   int size = params.width * params.height * RGB_CNT * sizeof(uint8_t);
   params.image = safe_malloc(size);
+  init_arr(params.image, size);
 
   int result = xwin_init(params.width, params.height);
 

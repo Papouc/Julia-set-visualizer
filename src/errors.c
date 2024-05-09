@@ -19,8 +19,10 @@ void handle_error(error err_code)
       break;
     case INCORRECT_CHUNK_ERR:
       err_msg = "Chunk alignment failure";
+      break;
     case GUI_ERR:
       err_msg = "Graphical window failure";
+      break;
     case NO_ERR:
       break;
   }

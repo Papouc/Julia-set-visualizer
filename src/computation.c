@@ -32,6 +32,7 @@ void init_computation(void)
   // allocate memory for the pixel grid
   int size = params.grid_h * params.grid_w * sizeof(uint8_t);
   params.grid = safe_malloc(size);
+  init_arr(params.grid, size);
 
   // determine needed amount of chunks
   int grid_pixel_cnt = params.grid_w * params.grid_h;
@@ -54,6 +55,28 @@ void tidy_computation(void)
 
 void abort_computation(void)
 {
+  if (!is_aborted())
+  {
+    // move one chunk back
+    params.chunk_id--;
+
+    if (params.draw_x - params.chunk_w < 0)
+    {
+      // return to the end of the previous line
+      params.draw_x = params.grid_w - params.chunk_w;
+      params.draw_y -= params.chunk_h;
+
+      params.chunk_start_i -= params.density_i * params.chunk_h;
+      params.chunk_start_r = params.plane_max_r - (params.density_r * params.chunk_w);
+    }
+    else
+    {
+      // move to the previous chunk on the current line
+      params.draw_x -= params.chunk_w;
+      params.chunk_start_r -= params.density_r * params.chunk_w;
+    }
+  }
+
   // "freeze" computation in current state
   params.aborted = true;
 }
@@ -107,6 +130,7 @@ bool fill_set_compute_msg(message *msg)
 
     // starting new computation
     params.has_finished = false;
+    params.aborted = false;
 
     // succesfully filled the message
     success = true;
@@ -118,7 +142,7 @@ bool fill_set_compute_msg(message *msg)
 bool fill_compute_msg(message *msg)
 {
   // "start computing!!" message construction
-  if (!is_in_progress())
+  if (!is_in_progress() && !has_finished())
   {
     // first chunk init
     params.chunk_id = 0;
@@ -130,7 +154,7 @@ bool fill_compute_msg(message *msg)
 
     params.in_progress = true;
   }
-  else
+  else if (!has_finished())
   {
     // next chunk init
     params.chunk_id++;
@@ -151,7 +175,7 @@ bool fill_compute_msg(message *msg)
     }
   }
 
-  if (is_in_progress())
+  if (is_in_progress() && !has_finished())
   {
     // fill message (for any state of computation)
     msg->data.compute.cid = params.chunk_id;

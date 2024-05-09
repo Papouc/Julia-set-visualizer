@@ -36,3 +36,10 @@ void init_msg(message *new_msg)
   new_msg->type = 0;
   memset(&(new_msg->data), 0, sizeof(new_msg->data));
 }
+
+void init_arr(uint8_t *arr, int size)
+{
+  // set all values in the malloced array to zero
+  // size = size in bytes
+  memset(arr, 0, size);
+}

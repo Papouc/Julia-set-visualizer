@@ -22,6 +22,7 @@ error handle_startup_msg(message *msg);
 error handle_compute_data(message *msg);
 error handle_msg_done(message *msg);
 
+bool handle_manual_compute(message *msg);
 void handle_send_failure(message_type msg_type);
 
 #endif

@@ -122,10 +122,8 @@ error process_keyboard_event(event k_event, unsigned char msg_bytes[], int pipe_
       prep_success = fill_set_compute_msg(&new_msg);
       break;
     case EV_COMPUTE:
-      // manually instruct to continue computation
-      unabort_computation();
       new_msg.type = MSG_COMPUTE;
-      prep_success = fill_compute_msg(&new_msg);
+      prep_success = handle_manual_compute(&new_msg);
       break;
     case EV_ABORT:
       abort_computation();
@@ -175,12 +173,12 @@ error process_app_event(event a_event, unsigned char msg_bytes[], int pipe_fd)
     }
   }
 
-  if (!prep_success && new_msg.type == MSG_COMPUTE)
+  if (!prep_success && new_msg.type != MSG_NBR)
   {
     // message type set, but failed to fill
     handle_send_failure(new_msg.type);
   }
-  else if (new_msg.type == MSG_COMPUTE)
+  else if (new_msg.type != MSG_NBR)
   {
     err_code = send_msg(&new_msg, msg_bytes, pipe_fd);
   }
@@ -210,8 +208,15 @@ error handle_startup_msg(message *msg)
 
 error handle_compute_data(message *msg)
 {
-  // redirect processed data to computation compile unit
-  error err_code = update_grid(&msg->data.compute_data);
+  error err_code = NO_ERR;
+
+  // the chunk may have arrived after the computation was aborted
+  if (!is_aborted())
+  {
+    // redirect processed data to computation compile unit
+    err_code = update_grid(&msg->data.compute_data);
+  }
+
   return err_code;
 }
 
@@ -255,6 +260,20 @@ void handle_send_failure(message_type msg_type)
   }
 
   fprintf(stderr, "Warning: %s :D!\n", warning_msg);
+}
+
+bool handle_manual_compute(message *msg)
+{
+  bool result = false;
+
+  // manually instruct to continue computation
+  if ((is_in_progress() && is_aborted()) || !is_in_progress())
+  {
+    unabort_computation();
+    result = fill_compute_msg(msg);
+  }
+
+  return result;
 }
 
 int open_pipe(char *pipe_name)
