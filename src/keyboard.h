@@ -4,6 +4,7 @@
 #include <stdbool.h>
 
 #define STD_IN_FD 0
+#define POLL_KEY_INTERVAL 5 * 1000 // 5ms
 
 typedef enum
 {

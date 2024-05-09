@@ -6,6 +6,7 @@
 #include "prg_io_nonblock.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 void *work(void *arg)
 {
@@ -286,6 +287,9 @@ int open_pipe(char *pipe_name)
   while (pipe_out_fd == PIPE_NOT_OPENED && !should_quit())
   {
     pipe_out_fd = io_open_write(pipe_name);
+
+    // do not eat up 100% of CPU (no other cleaner way of doing this came to my mind :D)
+    usleep(PIPE_CHECK_INTERVAL);
   }
 
   if (pipe_out_fd != PIPE_NOT_OPENED)

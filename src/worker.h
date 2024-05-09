@@ -6,6 +6,7 @@
 #include "messages.h"
 
 #define PIPE_NOT_OPENED -1
+#define PIPE_CHECK_INTERVAL 10 * 1000 // 10ms
 
 // main event handling functions
 void *work(void *arg);

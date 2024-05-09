@@ -54,6 +54,10 @@ void *read_keyboard(void *)
     }
 
     current_c = getchar();
+
+    // sleep for a while (than check the buffer for new char)
+    // needed in order to not eat up 100% of CPU
+    usleep(POLL_KEY_INTERVAL);
   }
 
   // revert terminal back to original state
