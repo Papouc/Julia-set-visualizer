@@ -18,7 +18,7 @@ typedef struct
   double c_i;
 
   // iterations count
-  int n_iters;
+  uint8_t n_iters;
 
   // section of the imaginary plane
   double plane_max_r;
@@ -76,10 +76,17 @@ error colorize_image(int width, int height, uint8_t *image);
 bool is_in_progress(void);
 bool has_finished(void);
 bool is_aborted(void);
+
+// params getters
 void get_grid_size(int *width, int *height);
+void get_density(double *r_part, double *i_part);
+void get_constant(double *r_part, double *i_part);
+void get_plane_top_left(double *r_part, double *i_part);
+void get_iters_bound(uint8_t *bound);
 
 // raw computation manipulation
 void erase_grid_contents();
 void reset_computation();
+void set_grid_value(int index, uint8_t value);
 
 #endif

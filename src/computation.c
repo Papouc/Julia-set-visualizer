@@ -106,12 +106,6 @@ bool has_finished(void)
   return params.has_finished;
 }
 
-void get_grid_size(int *width, int *height)
-{
-  *width = params.grid_w;
-  *height = params.grid_h;
-}
-
 bool fill_set_compute_msg(message *msg)
 {
   bool success = false;
@@ -275,3 +269,40 @@ void reset_computation()
   // schelude erase (buffer will be erased during next grid update)
   params.erase_scheluded = true;
 }
+
+// ---- GETTERS ----
+void set_grid_value(int index, uint8_t value)
+{
+  params.grid[index] = value;
+}
+
+void get_grid_size(int *width, int *height)
+{
+  *width = params.grid_w;
+  *height = params.grid_h;
+}
+
+void get_density(double *r_part, double *i_part)
+{
+  *r_part = params.density_r;
+  *i_part = params.density_i;
+}
+
+void get_constant(double *r_part, double *i_part)
+{
+  *r_part = params.c_r;
+  *i_part = params.c_i;
+}
+
+void get_plane_top_left(double *r_part, double *i_part)
+{
+  *r_part = params.plane_min_r;
+  *i_part = params.plane_max_i;
+}
+
+void get_iters_bound(uint8_t *bound)
+{
+  *bound = params.n_iters;
+}
+
+// ---- END GETTERS ----

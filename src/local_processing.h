@@ -10,5 +10,6 @@ error handle_local_keyboard_ev(event ev);
 // seprate event handlers
 error handle_reset_chunk(void);
 error handle_clear_buffer(void);
+error handle_compute_cpu(void);
 
 #endif
