@@ -1,9 +1,6 @@
 #ifndef __KEYBOARD_H__
 #define __KEYBOARD_H__
 
-#include <stdbool.h>
-
-#define STD_IN_FD 0
 #define POLL_KEY_INTERVAL 5 * 1000 // 5ms
 
 typedef enum
@@ -20,6 +17,5 @@ typedef enum
 } keybindings;
 
 void *read_keyboard(void *);
-void switch_raw_mode(bool on);
 
 #endif

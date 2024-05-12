@@ -29,8 +29,8 @@ int main(int argc, char *argv[])
 
   // create threads (+ pass pipes/data)
   pthread_t threads[THREAD_COUNT];
-  pthread_create(&threads[0], NULL, read_keyboard, NULL);
-  pthread_create(&threads[1], NULL, read_pipe, pipe_in);
+  pthread_create(&threads[0], NULL, read_pipe, pipe_in);
+  pthread_create(&threads[1], NULL, read_keyboard, NULL);
   pthread_create(&threads[2], NULL, work, pipe_out);
 
   // wait for all threads
@@ -50,6 +50,7 @@ int main(int argc, char *argv[])
     {
       err_code = thread_err_code;
       handle_error(err_code);
+      signal_quit();
     }
 
     free(thread_ret);

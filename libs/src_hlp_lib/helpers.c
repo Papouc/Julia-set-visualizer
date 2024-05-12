@@ -16,18 +16,6 @@ void *safe_malloc(size_t size)
   return new_mem;
 }
 
-void safe_realloc(void **mem, size_t size)
-{
-  void *temp = realloc(*mem, size);
-  if (temp == NULL)
-  {
-    handle_error(ALLOC_ERR);
-    exit(ALLOC_ERR);
-  }
-
-  *mem = temp;
-}
-
 void init_msg(message *new_msg)
 {
   // properly initialize dynamically allocated message in order
