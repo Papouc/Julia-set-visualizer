@@ -25,7 +25,7 @@ static compute_params params = {
   .has_finished = true,
   .aborted = false,
 
-  .erase_scheluded = false,
+  .erase_scheduled = false,
 };
 
 void init_computation(void)
@@ -189,11 +189,11 @@ error update_grid(msg_compute_data *data)
 {
   error err_code = (data->cid == params.chunk_id) ? NO_ERR : INCORRECT_CHUNK_ERR;
 
-  if (data->cid == 0 && params.erase_scheluded)
+  if (data->cid == 0 && params.erase_scheduled)
   {
     // make sure to draw onto blank plane after erase is scheluded
     erase_grid_contents();
-    params.erase_scheluded = false;
+    params.erase_scheduled = false;
   }
 
   if (err_code == NO_ERR)
@@ -267,7 +267,17 @@ void reset_computation()
   params.in_progress = false;
 
   // schelude erase (buffer will be erased during next grid update)
-  params.erase_scheluded = true;
+  params.erase_scheduled = true;
+}
+
+void cancel_computation()
+{
+  // make this computation "done"
+  // thus enforce new set compute
+
+  params.has_finished = true;
+  params.in_progress = false;
+  params.aborted = false;
 }
 
 // ---- GETTERS ----

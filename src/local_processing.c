@@ -58,7 +58,9 @@ error handle_compute_cpu(void)
   get_plane_top_left(&start_r, &start_i);
 
   // erase everything that is currently on the screen
-  handle_clear_buffer();
+  // + cancle any ongoing computation
+  cancel_computation();
+  erase_grid_contents();
 
   // pack base info about the calculation
   complex_calc calc_info = {

@@ -56,7 +56,7 @@ typedef struct
   bool has_finished;
   bool aborted;
 
-  bool erase_scheluded;
+  bool erase_scheduled;
 
 } compute_params;
 
@@ -87,6 +87,7 @@ void get_iters_bound(uint8_t *bound);
 // raw computation manipulation
 void erase_grid_contents();
 void reset_computation();
+void cancel_computation();
 void set_grid_value(int index, uint8_t value);
 
 #endif
