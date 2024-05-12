@@ -1,5 +1,5 @@
 #include "event_queue.h"
-#include "helpers.h"
+#include <stdlib.h>
 
 static event_queue main_queue;
 static bool app_quit;
@@ -7,10 +7,17 @@ static bool app_quit;
 void queue_init(void)
 {
   // init stuff related to queue
-  main_queue.data = (event *)safe_malloc(QUEUE_CAPACITY * sizeof(event));
+  main_queue.data = (event *)malloc(QUEUE_CAPACITY * sizeof(event));
   main_queue.capacity = QUEUE_CAPACITY;
   main_queue.size = 0;
   main_queue.oldest = 0;
+
+  // failed to create queue
+  if (main_queue.data == NULL)
+  {
+    app_quit = true;
+    return;
+  }
 
   // init stuff related to threading
   pthread_mutex_init(&main_queue.queue_mtx, NULL);
