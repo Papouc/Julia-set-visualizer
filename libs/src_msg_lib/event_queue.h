@@ -34,6 +34,8 @@ typedef enum
   EV_CLEAR_BUFFER,
   EV_REFRESH,
   EV_STARTUP,
+  EV_MOVE_PLANE,
+  EV_ZOOM,
   EV_TYPE_NUM
 } event_type;
 

@@ -122,6 +122,7 @@ error process_keyboard_event(event k_event, unsigned char msg_bytes[], int pipe_
     case EV_SET_COMPUTE:
       new_msg.type = MSG_SET_COMPUTE;
       prep_success = fill_set_compute_msg(&new_msg);
+      set_local_mode(false);
       break;
     case EV_COMPUTE:
       new_msg.type = MSG_COMPUTE;
@@ -174,7 +175,7 @@ error process_app_event(event a_event, unsigned char msg_bytes[], int pipe_fd)
       prep_success = fill_compute_msg(&new_msg);
     }
   }
-  
+
   if (!prep_success && new_msg.type != MSG_NBR)
   {
     // message type set, but failed to fill

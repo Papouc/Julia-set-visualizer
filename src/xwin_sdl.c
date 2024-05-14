@@ -1,16 +1,11 @@
-/*
- * Filename: xwin_sdl.c
- * Date:     2015/06/18 14:37
- * Author:   Jan Faigl
- */
-
-#include <assert.h>
-
-#include <SDL.h>
-
-#include <SDL_image.h>
-
 #include "xwin_sdl.h"
+#include "errors.h"
+#include "event_queue.h"
+#include "helpers.h"
+#include "local_processing.h"
+#include <assert.h>
+#include <pthread.h>
+#include <stdio.h>
 
 static SDL_Window *win = NULL;
 
@@ -63,7 +58,7 @@ int xwin_init(int w, int h)
   return r;
 }
 
-void xwin_close()
+void xwin_close(void)
 {
   assert(win != NULL);
   SDL_DestroyWindow(win);
@@ -88,10 +83,102 @@ void xwin_redraw(int w, int h, unsigned char *img)
   SDL_UpdateWindowSurface(win);
 }
 
-void xwin_poll_events(void)
+void *xwin_poll_events(void *)
 {
+  error *err_code = (error *)safe_malloc(sizeof(error));
+  *err_code = NO_ERR;
+
+  bool mouse_pressed = false;
+
+  // store last BUFF_SIZE values
+  // used for averaging mouse movement in order to not redraw too often
+  int values_x[BUFF_SIZE];
+  int values_y[BUFF_SIZE];
+  int records = 0;
+
+  // poll events from SDL queue
   SDL_Event event;
-  while (SDL_PollEvent(&event)) {}
+  while (!should_quit())
+  {
+    if (!SDL_PollEvent(&event))
+    {
+      SDL_Delay(POLL_INTERVAL);
+      continue;
+    }
+
+    switch (event.type)
+    {
+      case SDL_MOUSEWHEEL:
+        request_zoom(event.wheel.y);
+        break;
+      case SDL_MOUSEBUTTONDOWN:
+        mouse_pressed = true;
+        break;
+      case SDL_MOUSEBUTTONUP:
+        mouse_pressed = false;
+        break;
+      case SDL_MOUSEMOTION:
+        if (records >= BUFF_SIZE)
+        {
+          // request redraw
+          request_move_plane(values_x, values_y, mouse_pressed);
+          records = 0;
+        }
+
+        // buffer current value
+        values_x[records] = event.motion.xrel;
+        values_y[records] = event.motion.yrel;
+        records++;
+        break;
+      default:
+        break;
+    }
+  }
+
+  pthread_exit((void *)err_code);
+  return NULL;
 }
 
-/* end of xwin_sdl.c */
+void request_move_plane(int values_x[], int values_y[], bool mouse_pressed)
+{
+  if (!mouse_pressed)
+  {
+    // only move when mouse button is pressed
+    return;
+  }
+
+  // average last BUFF_SIZE values (do not redraw too often)
+  int avg_x = 0, avg_y = 0;
+  for (int i = 0; i < BUFF_SIZE; i++)
+  {
+    avg_x += values_x[i];
+    avg_y += values_y[i];
+  }
+
+  avg_x /= BUFF_SIZE;
+  avg_y /= BUFF_SIZE;
+
+  // construct new event carrying delta values
+  event move_ev = { .type = EV_MOVE_PLANE, .source = EV_KEYBOARD };
+
+  message *move_msg = (message *)safe_malloc(sizeof(message));
+
+  // fill msg values
+  move_msg->type = MSG_MOVE_PLANE;
+  move_msg->data.move_plane.x_diff = avg_x;
+  move_msg->data.move_plane.y_diff = avg_y;
+
+  move_ev.data.msg = move_msg;
+  queue_push(move_ev);
+}
+
+void request_zoom(int zoom_dir)
+{
+  // create new zoom event
+  event ev_zoom = { .type = EV_ZOOM, .source = EV_KEYBOARD };
+
+  // set zoom direction (either 1 or -1)
+  ev_zoom.data.param = zoom_dir;
+
+  queue_push(ev_zoom);
+}

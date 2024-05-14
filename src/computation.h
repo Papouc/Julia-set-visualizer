@@ -82,6 +82,7 @@ void get_grid_size(int *width, int *height);
 void get_density(double *r_part, double *i_part);
 void get_constant(double *r_part, double *i_part);
 void get_plane_top_left(double *r_part, double *i_part);
+void get_plane_bottom_right(double *r_part, double *i_part);
 void get_iters_bound(uint8_t *bound);
 
 // raw computation manipulation

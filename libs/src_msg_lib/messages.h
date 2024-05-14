@@ -23,6 +23,7 @@ typedef enum
   MSG_SET_COMPUTE,  // set computation parameters
   MSG_COMPUTE,      // request computation of a batch of tasks (chunk_id, nbr_tasks)
   MSG_COMPUTE_DATA, // computed result (chunk_id, result)
+  MSG_MOVE_PLANE,   // local mode only msg, contains mouse motion info
   MSG_NBR
 } message_type;
 
@@ -68,6 +69,12 @@ typedef struct
 
 typedef struct
 {
+  int x_diff;
+  int y_diff;
+} msg_move_plane;
+
+typedef struct
+{
   uint8_t type; // message type
   union
   {
@@ -76,6 +83,7 @@ typedef struct
     msg_set_compute set_compute;
     msg_compute compute;
     msg_compute_data compute_data;
+    msg_move_plane move_plane;
   } data;
   uint8_t cksum; // message command
 } message;

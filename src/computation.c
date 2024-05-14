@@ -7,7 +7,7 @@
 static compute_params params = {
   .c_r = -0.4,
   .c_i = 0.6,
-  .n_iters = 60,
+  .n_iters = 30,
 
   .plane_max_r = 1.6,
   .plane_max_i = 1.1,
@@ -308,6 +308,12 @@ void get_plane_top_left(double *r_part, double *i_part)
 {
   *r_part = params.plane_min_r;
   *i_part = params.plane_max_i;
+}
+
+void get_plane_bottom_right(double *r_part, double *i_part)
+{
+  *r_part = params.plane_max_r;
+  *i_part = params.plane_min_i;
 }
 
 void get_iters_bound(uint8_t *bound)

@@ -4,10 +4,11 @@
 #include "keyboard.h"
 #include "pipe.h"
 #include "worker.h"
+#include "xwin_sdl.h"
 #include <pthread.h>
 #include <stdlib.h>
 
-#define THREAD_COUNT 3
+#define THREAD_COUNT 4
 
 // default pipes assumption
 char *default_pipe_in = "/tmp/computational_module.out";
@@ -31,6 +32,7 @@ int main(int argc, char *argv[])
   pthread_create(&threads[0], NULL, read_pipe, pipe_in);
   pthread_create(&threads[1], NULL, read_keyboard, NULL);
   pthread_create(&threads[2], NULL, work, pipe_out);
+  pthread_create(&threads[3], NULL, xwin_poll_events, NULL);
 
   // wait for all threads
   for (int thread_i = 0; thread_i < THREAD_COUNT; thread_i++)
