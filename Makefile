@@ -1,8 +1,8 @@
 CFLAGS+= -Wall -std=gnu99 -g
-LDFLAGS=-pthread -lm -lcomplex_plain -lprgio -lmsg -ltrc -lerr -lhlp -L./bin
+LDFLAGS=-pthread -lcomplex_plain -lm -lprgio -lmsg -ltrc -lerr -lhlp -L./bin
 
 CMPCFLAGS=-Wall -std=gnu99 -g
-CMPLDFLAGS=-pthread -lm -lcomplex_plain -lprgio -lmsg -ltrc -lerr -lhlp -L./bin
+CMPLDFLAGS=-pthread -lcomplex_plain -lm -lprgio -lmsg -ltrc -lerr -lhlp -L./bin
 
 HW=prgsem
 
@@ -49,7 +49,7 @@ OBJS_BIN_DIR=$(patsubst %.o,bin/%.o,$(notdir $(OBJS)))
 CURRENT_FILE=NONE
 
 $(MAIN_BIN): $(OBJS_BIN_DIR)
-	$(CC) $(OBJS_BIN_DIR) $(LDFLAGS) -o $@
+	$(CC) $(OBJS_BIN_DIR) -o $@ $(LDFLAGS)
 
 # pattern rule does not work here since I cannot manipulate prequisity value directly
 $(OBJS_BIN_DIR): $(SRC_FILES) $(CP_LIB) $(IO_LIB) $(MSG_LIB) $(TRC_LIB) $(ERR_LIB) $(HLP_LIB)
@@ -65,7 +65,7 @@ CMP_OBJS=$(patsubst %.c,%.o,$(SRC_CMP_FILES))
 CMP_OBJS_BIN_DIR=$(patsubst %.o,bin/%.o,$(notdir $(CMP_OBJS)))
 
 $(CMP_BIN): $(CMP_OBJS_BIN_DIR)
-	$(CC) $(CMP_OBJS_BIN_DIR) $(CMPLDFLAGS) -o $@
+	$(CC) $(CMP_OBJS_BIN_DIR) -o $@ $(CMPLDFLAGS)
 
 $(CMP_OBJS_BIN_DIR): $(SRC_CMP_FILES) $(CP_LIB) $(IO_LIB) $(MSG_LIB) $(TRC_LIB) $(ERR_LIB) $(HLP_LIB)
 	$(eval CURRENT_FILE=$(patsubst %.o,%.c,src_cmp_mod/$(notdir $@)))
@@ -83,7 +83,7 @@ $(CP_LIB): $(LIB_OBJ_BIN_DIR)
 	ar -rcs $(CP_LIB) $(LIB_OBJ_BIN_DIR)
 
 $(LIB_OBJ_BIN_DIR): $(LIB_FILE)
-	$(CC) -c -Wall -g -lm $(LIB_FILE) -o $(LIB_OBJ_BIN_DIR)
+	$(CC) -c -Wall -g $(LIB_FILE) -o $(LIB_OBJ_BIN_DIR)
 
 # ---- END STATIC COMPLEX_PLANE LIBRARY ----
 
@@ -151,7 +151,7 @@ LIB_HLP_FILE=libs/src_hlp_lib/helpers.c
 LIB_HLP_OBJ=$(patsubst %.c,%.o,$(LIB_HLP_FILE))
 LIB_HLP_OBJ_BIN_DIR=$(patsubst %.o,bin/%.o,$(notdir $(LIB_HLP_OBJ)))
 
-HLPFLAGS=-I./libs/src_msg_lib -I./libs/src_err_lib
+HLPFLAGS=-I./libs/src_err_lib
 
 $(HLP_LIB): $(LIB_HLP_OBJ_BIN_DIR)
 	ar -rcs $(HLP_LIB) $(LIB_HLP_OBJ_BIN_DIR)

@@ -1,5 +1,7 @@
 #include "event_queue.h"
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 static event_queue main_queue;
 static bool app_quit;
@@ -116,4 +118,67 @@ void signal_quit(void)
   // bool, being 1 byte size type should be atomic
   // thus no mutext used :D
   app_quit = true;
+}
+
+void construct_msg(unsigned char current_c, unsigned char msg_bytes[], int *len, event_source src)
+{
+  // pos in bytes arr
+  static int write_index;
+  if (*len <= 0)
+  {
+    if (!get_message_size(current_c, len))
+    {
+      fprintf(stderr, "Unknown message recieved :D!");
+      return;
+    }
+
+    // start of a new message
+    write_index = 0;
+    msg_bytes[write_index] = current_c;
+    write_index++;
+  }
+  else if (write_index < *len)
+  {
+    // gradually append bytes to the message
+    msg_bytes[write_index] = current_c;
+    write_index++;
+
+    // wait until all bytes of the message are read
+    if (write_index < *len)
+    {
+      return;
+    }
+
+    // create real message from cached bytes
+    message *created_msg = (message *)malloc(sizeof(message));
+
+    if (created_msg == NULL)
+    {
+      return;
+    }
+
+    // initialize new message
+    created_msg->cksum = 0;
+    created_msg->type = 0;
+    memset(&(created_msg->data), 0, sizeof(created_msg->data));
+
+    bool result = parse_message_buf(msg_bytes, *len, created_msg);
+
+    if (!result)
+    {
+      // failed to parse message
+      free(created_msg);
+    }
+    else
+    {
+      // message parsed successfully, push new event to the queue
+      event new_event = { .type = EV_SERIAL, .source = src };
+      new_event.data.msg = created_msg;
+
+      queue_push(new_event);
+    }
+
+    // prepare for next message
+    *len = 0;
+  }
 }

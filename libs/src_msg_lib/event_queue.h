@@ -33,6 +33,7 @@ typedef enum
   EV_COMPUTE_CPU,
   EV_CLEAR_BUFFER,
   EV_REFRESH,
+  EV_STARTUP,
   EV_TYPE_NUM
 } event_type;
 
@@ -79,6 +80,9 @@ void queue_push(event ev);
 // application lifecycle
 bool should_quit(void);
 void signal_quit(void);
+
+// construct message and append it to the queue encapsulated as event
+void construct_msg(unsigned char current_c, unsigned char msg_bytes[], int *len, event_source src);
 
 #endif
 

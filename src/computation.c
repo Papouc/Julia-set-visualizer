@@ -1,6 +1,6 @@
 #include "computation.h"
 #include "helpers.h"
-#include "math.h"
+#include <math.h>
 #include <stdlib.h>
 
 // keep main computation properties

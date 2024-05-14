@@ -5,7 +5,8 @@
 
 typedef enum
 {
-  EXIT_KEY = 'q'
+  EXIT_KEY = 'q',
+  ABORT_KEY = 'a'
 } keybindings;
 
 void *read_keyboard(void *);

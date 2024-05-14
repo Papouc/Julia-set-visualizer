@@ -1,7 +1,6 @@
 #include "errors.h"
 #include "event_queue.h"
 
-// threading
 #include "keyboard.h"
 #include "pipe.h"
 #include "worker.h"

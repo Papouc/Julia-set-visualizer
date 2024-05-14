@@ -39,7 +39,7 @@ void *read_pipe(void *arg)
       if (result > 0)
       {
         // something was read
-        construct_msg(current_c, msg_bytes, &len);
+        construct_msg(current_c, msg_bytes, &len, EV_MODULE);
       }
       else if (result == 0)
       {
@@ -59,58 +59,4 @@ void *read_pipe(void *arg)
 
   pthread_exit((void *)err_code);
   return NULL;
-}
-
-void construct_msg(unsigned char current_c, unsigned char msg_bytes[], int *len)
-{
-  // pos in bytes arr
-  static int write_index;
-  if (*len <= 0)
-  {
-    if (!get_message_size(current_c, len))
-    {
-      fprintf(stderr, "Unknown message recieved :D!");
-      return;
-    }
-
-    // start of a new message
-    write_index = 0;
-    msg_bytes[write_index] = current_c;
-    write_index++;
-  }
-  else if (write_index < *len)
-  {
-    // gradually append bytes to the message
-    msg_bytes[write_index] = current_c;
-    write_index++;
-
-    // wait until all bytes of the message are read
-    if (write_index < *len)
-    {
-      return;
-    }
-
-    // create real message from cached bytes
-    message *created_msg = (message *)safe_malloc(sizeof(message));
-    init_msg(created_msg);
-
-    bool result = parse_message_buf(msg_bytes, *len, created_msg);
-
-    if (!result)
-    {
-      // failed to parse message
-      free(created_msg);
-    }
-    else
-    {
-      // message parsed successfully, push new event to the queue
-      event new_event = { .type = EV_SERIAL, .source = EV_MODULE };
-      new_event.data.msg = created_msg;
-
-      queue_push(new_event);
-    }
-
-    // prepare for next message
-    *len = 0;
-  }
 }

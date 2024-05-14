@@ -6,6 +6,5 @@
 #define PIPE_EMPTY 0
 
 void *read_pipe(void *arg);
-void construct_msg(unsigned char current_c, unsigned char msg_bytes[], int *len);
 
 #endif
