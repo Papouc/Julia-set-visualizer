@@ -5,6 +5,7 @@
 #include "helpers.h"
 #include "xwin_sdl.h"
 #include <math.h>
+#include <unistd.h>
 
 static local_mode_params params = {
   .local_mode_enabled = false,
@@ -40,6 +41,19 @@ error handle_local_keyboard_ev(event ev)
       break;
     case EV_SAVE_IMG:
       xwin_save_img();
+      break;
+    case EV_PLAY_ANIM:
+      set_local_mode(true);
+      play_animation();
+      break;
+    case EV_CHANGE_CONST:
+      if (!params.local_mode_enabled)
+      {
+        set_local_mode(true);
+      }
+      params.c_r += ev.data.param * C_MANUAL_DIFF;
+      params.c_i += ev.data.param * C_MANUAL_DIFF;
+      redraw = true;
       break;
     default:
       break;
@@ -81,9 +95,6 @@ error handle_compute_cpu(void)
   uint8_t max_iters = 0;
   get_iters_bound(&max_iters);
 
-  double const_r = 0.0, const_i = 0.0;
-  get_constant(&const_r, &const_i);
-
   // erase everything that is currently on the screen
   // + cancle any ongoing computation
   cancel_computation();
@@ -92,8 +103,8 @@ error handle_compute_cpu(void)
   // pack base info about the calculation
   complex_calc calc_info = {
     .n_iters = max_iters,
-    .c_r = const_r,
-    .c_i = const_i
+    .c_r = params.c_r,
+    .c_i = params.c_i
   };
 
   // manually append value for every pixel into the grid
@@ -135,6 +146,13 @@ void set_local_mode(bool on)
     // default density
     params.density_r = density_r;
     params.density_i = density_i;
+
+    // default constant
+    double const_r = 0.0, const_i = 0.0;
+    get_constant(&const_r, &const_i);
+
+    params.c_r = const_r;
+    params.c_i = const_i;
 
     // no zoom by default
     params.zoom_factor = 1.0;
@@ -179,5 +197,23 @@ void zoom_plane(int zoom_dir)
 
     params.density_r = (plane_width / (double)grid_w);
     params.density_i = -(plane_height / (double)grid_h);
+  }
+}
+
+void play_animation(void)
+{
+  if (!params.local_mode_enabled)
+  {
+    return;
+  }
+
+  for (int frame_i = 0; frame_i < FRAMES_COUNT; frame_i++)
+  {
+    params.c_i += C_FRAME_DIFF;
+    params.c_r += C_FRAME_DIFF;
+
+    handle_compute_cpu();
+
+    usleep(FRAME_TIME);
   }
 }

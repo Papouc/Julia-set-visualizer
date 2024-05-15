@@ -20,7 +20,6 @@ void *read_keyboard(void *)
     if (current_c == ABORT_KEY)
     {
       new_event.type = EV_ABORT;
-      
     }
 
     if (new_event.type != EV_TYPE_NUM)

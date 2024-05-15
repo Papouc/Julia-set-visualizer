@@ -37,6 +37,8 @@ typedef enum
   EV_MOVE_PLANE,
   EV_ZOOM,
   EV_SAVE_IMG,
+  EV_PLAY_ANIM,
+  EV_CHANGE_CONST,
   EV_TYPE_NUM
 } event_type;
 

@@ -48,6 +48,7 @@ error refresh_gui(void)
     {
       // project changes to the graphical window
       xwin_redraw(params.width, params.height, params.image);
+      xwin_draw_buttons();
     }
   }
 

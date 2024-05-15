@@ -7,7 +7,7 @@
 static compute_params params = {
   .c_r = -0.4,
   .c_i = 0.6,
-  .n_iters = 30,
+  .n_iters = 20,
 
   .plane_max_r = 1.6,
   .plane_max_i = 1.1,

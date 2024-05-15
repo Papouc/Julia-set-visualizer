@@ -10,6 +10,10 @@
 #include <time.h>
 
 static SDL_Window *win = NULL;
+static SDL_Renderer *ren = NULL;
+static TTF_Font *font = NULL;
+
+static simple_button buttons[BTN_CNT];
 
 static unsigned char icon_32x32_bits[] = {
   0x00, 0x00, 0x21, 0x00, 0x00, 0x21, 0x00, 0x00, 0x21, 0x00, 0x00, 0x21, 0x00, 0x00, 0x21, 0x00, 0x00, 0x20, 0x00, 0x00, 0x23, 0x00, 0x01, 0x29, 0x00, 0x01, 0x2e, 0x00, 0x02, 0x31, 0x00, 0x02, 0x34, 0x00, 0x02, 0x35, 0x00, 0x02, 0x33, 0x00, 0x02, 0x31, 0x00, 0x01, 0x2d, 0x00, 0x01, 0x29, 0x00, 0x00, 0x23, 0x00, 0x00, 0x20, 0x00, 0x00, 0x21, 0x00, 0x00, 0x21, 0x00, 0x00, 0x21, 0x00, 0x00, 0x21, 0x00, 0x00, 0x21, 0x00, 0x00, 0x21, 0x00, 0x00, 0x21, 0x00, 0x00, 0x21, 0x00, 0x00, 0x21, 0x00, 0x00, 0x21, 0x00, 0x00, 0x21, 0x00, 0x00, 0x21, 0x00, 0x00, 0x21, 0x00, 0x00, 0x21,
@@ -57,14 +61,52 @@ int xwin_init(int w, int h)
   SDL_Surface *surface = SDL_CreateRGBSurfaceFrom(icon_32x32_bits, 32, 32, 24, 32 * 3, 0xff, 0xff00, 0xff0000, 0x0000);
   SDL_SetWindowIcon(win, surface);
   SDL_FreeSurface(surface);
+  xwin_init_buttons(w, h);
+  xwin_draw_buttons();
   return r;
 }
 
 void xwin_close(void)
 {
   assert(win != NULL);
+
+  TTF_CloseFont(font);
+  TTF_Quit();
+  SDL_DestroyRenderer(ren);
   SDL_DestroyWindow(win);
   SDL_Quit();
+}
+
+void xwin_init_buttons(int w, int h)
+{
+  // create renderer (for drawing buttons)
+  ren = SDL_CreateRenderer(win, -1, SDL_RENDERER_SOFTWARE);
+  SDL_SetRenderDrawBlendMode(ren, SDL_BLENDMODE_BLEND);
+
+  TTF_Init();
+  font = TTF_OpenFont("./fonts/font.ttf", 16);
+
+  SDL_Color buts_color = { BUT_COLOR };
+  SDL_Color txts_color = { TXT_COLOR };
+
+  // create individual buttons
+  simple_button play_anim_but = { .width = BUT_W, .height = BUT_H, .color = buts_color };
+  play_anim_but.pos_x = w - play_anim_but.width - BUT_MARGIN;
+  play_anim_but.pos_y = h - play_anim_but.height - BUT_MARGIN;
+  play_anim_but.txt = "Play animation";
+  play_anim_but.txt_color = txts_color;
+  play_anim_but.on_click = &request_anim;
+
+  simple_button save_img_but = { .width = BUT_W, .height = BUT_H, .color = buts_color };
+  save_img_but.pos_x = w - save_img_but.width - BUT_MARGIN;
+  save_img_but.pos_y = h - 2 * (save_img_but.height + BUT_MARGIN);
+  save_img_but.txt = "Caputre image";
+  save_img_but.txt_color = txts_color;
+  save_img_but.on_click = &xwin_save_img;
+
+  // copy buttons to the global arr
+  buttons[0] = play_anim_but;
+  buttons[1] = save_img_but;
 }
 
 void xwin_redraw(int w, int h, unsigned char *img)
@@ -83,6 +125,44 @@ void xwin_redraw(int w, int h, unsigned char *img)
     }
   }
   SDL_UpdateWindowSurface(win);
+}
+
+void xwin_draw_buttons(void)
+{
+  if (!ren || !win || !font)
+  {
+    return;
+  }
+
+  // draw individual buttons
+  for (int but_i = 0; but_i < BTN_CNT; but_i++)
+  {
+    simple_button btn = buttons[but_i];
+
+    // create SDL rectangle representing the button
+    SDL_Rect r = { .w = btn.width, .h = btn.height, .x = btn.pos_x, .y = btn.pos_y };
+
+    // set color
+    SDL_SetRenderDrawColor(ren, btn.color.r, btn.color.g, btn.color.b, btn.color.a);
+    SDL_RenderFillRect(ren, &r);
+
+    // create text surface
+    SDL_Surface *text_surf = TTF_RenderText_Blended(font, btn.txt, btn.txt_color);
+
+    // center text
+    int txt_w = 0, txt_h = 0;
+    TTF_SizeText(font, btn.txt, &txt_w, &txt_h);
+
+    r.x += (btn.width / 2) - (txt_w / 2);
+    r.y += (btn.height / 2) - (txt_h / 2);
+
+    // "merge" surfaces together
+    SDL_Surface *scr = SDL_GetWindowSurface(win);
+    SDL_BlitSurface(text_surf, NULL, scr, &r);
+  }
+
+  // flush to the "screen"
+  SDL_RenderPresent(ren);
 }
 
 void xwin_save_img(void)
@@ -136,6 +216,7 @@ void xwin_save_img(void)
     SDL_Surface *surface = SDL_GetWindowSurface(win);
     int save_result = IMG_SavePNG(surface, filepath);
 
+    // inform user
     if (save_result != IMG_SAVE_SUCCESS)
     {
       fprintf(stderr, "Failed to save the image :D!\n");
@@ -176,6 +257,7 @@ void *xwin_poll_events(void *)
         request_zoom(event.wheel.y);
         break;
       case SDL_MOUSEBUTTONDOWN:
+        handle_mouse_press(event);
         mouse_pressed = true;
         break;
       case SDL_MOUSEBUTTONUP:
@@ -250,13 +332,32 @@ void request_zoom(int zoom_dir)
   queue_push(ev_zoom);
 }
 
+void handle_mouse_press(SDL_Event sdl_ev)
+{
+  int mouse_x = sdl_ev.motion.x;
+  int mouse_y = sdl_ev.motion.y;
+
+  for (int but_i = 0; but_i < BTN_CNT; but_i++)
+  {
+    simple_button btn = buttons[but_i];
+
+    bool x_match = mouse_x >= btn.pos_x && mouse_x <= btn.pos_x + btn.width;
+    bool y_match = mouse_y >= btn.pos_y && mouse_y <= btn.pos_y + btn.height;
+
+    if (x_match && y_match && btn.on_click != NULL)
+    {
+      (*btn.on_click)();
+    }
+  }
+}
+
 void handle_common_keys(SDL_Event sdl_ev)
 {
   // process keys send to SDL window
   // using same keymap as terminal input
   event new_event = { .type = EV_TYPE_NUM, .source = EV_KEYBOARD };
 
-  switch ((char)sdl_ev.key.keysym.sym)
+  switch ((int)sdl_ev.key.keysym.sym)
   {
     case GET_VERSION_KEY:
       new_event.type = EV_GET_VERSION;
@@ -285,6 +386,17 @@ void handle_common_keys(SDL_Event sdl_ev)
     case SAVE_IMG_KEY:
       new_event.type = EV_SAVE_IMG;
       break;
+    case ANIM_KEY:
+      new_event.type = EV_PLAY_ANIM;
+      break;
+    case CONSTANT_UP_KEY:
+      new_event.type = EV_CHANGE_CONST;
+      new_event.data.param = CONST_UP;
+      break;
+    case CONSTANT_DOWN_KEY:
+      new_event.type = EV_CHANGE_CONST;
+      new_event.data.param = CONST_DOWN;
+      break;
     case EXIT_KEY:
       new_event.type = EV_QUIT;
       break;
@@ -299,4 +411,11 @@ void handle_common_keys(SDL_Event sdl_ev)
   {
     signal_quit();
   }
+}
+
+void request_anim(void)
+{
+  // dedicated simple btn event handler for animation playback
+  event ev_anim = { .source = EV_KEYBOARD, .type = EV_PLAY_ANIM };
+  queue_push(ev_anim);
 }

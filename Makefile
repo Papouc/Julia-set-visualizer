@@ -35,7 +35,7 @@ CMPCFLAGS+=-I./libs/src_hlp_lib
 
 # sdl configuration
 CFLAGS+=$(shell sdl2-config --cflags)
-LDFLAGS+=$(shell sdl2-config --libs) -lSDL2_image
+LDFLAGS+=$(shell sdl2-config --libs) -lSDL2_image -lSDL2_ttf
 
 # dummy target to make everything
 all: $(MAIN_BIN) $(CMP_BIN) $(CP_LIB) $(IO_LIB) $(MSG_LIB) $(TRC_LIB) $(ERR_LIB) $(HLP_LIB)

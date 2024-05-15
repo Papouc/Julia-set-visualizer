@@ -49,6 +49,17 @@ void *read_keyboard(void *)
       case SAVE_IMG_KEY:
         new_event.type = EV_SAVE_IMG;
         break;
+      case ANIM_KEY:
+        new_event.type = EV_PLAY_ANIM;
+        break;
+      case CONSTANT_UP_KEY:
+        new_event.type = EV_CHANGE_CONST;
+        new_event.data.param = CONST_UP;
+        break;
+      case CONSTANT_DOWN_KEY:
+        new_event.type = EV_CHANGE_CONST;
+        new_event.data.param = CONST_DOWN;
+        break;
     }
 
     if (new_event.type != EV_TYPE_NUM)
