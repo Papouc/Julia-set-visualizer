@@ -36,6 +36,7 @@ typedef enum
   EV_STARTUP,
   EV_MOVE_PLANE,
   EV_ZOOM,
+  EV_SAVE_IMG,
   EV_TYPE_NUM
 } event_type;
 

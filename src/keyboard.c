@@ -46,6 +46,9 @@ void *read_keyboard(void *)
       case COMPUTE_LOCALY_KEY:
         new_event.type = EV_COMPUTE_CPU;
         break;
+      case SAVE_IMG_KEY:
+        new_event.type = EV_SAVE_IMG;
+        break;
     }
 
     if (new_event.type != EV_TYPE_NUM)

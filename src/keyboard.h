@@ -13,6 +13,7 @@ typedef enum
   CLEAR_BUFFER_KEY = 'l',
   REDRAW_WINDOW_KEY = 'p',
   COMPUTE_LOCALY_KEY = 'c',
+  SAVE_IMG_KEY = 'i',
   EXIT_KEY = 'q'
 } keybindings;
 

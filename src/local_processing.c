@@ -3,6 +3,7 @@
 #include "computation.h"
 #include "gui.h"
 #include "helpers.h"
+#include "xwin_sdl.h"
 #include <math.h>
 
 static local_mode_params params = {
@@ -37,6 +38,9 @@ error handle_local_keyboard_ev(event ev)
       zoom_plane(ev.data.param);
       redraw = true;
       break;
+    case EV_SAVE_IMG:
+      xwin_save_img();
+      break;
     default:
       break;
   }
@@ -58,6 +62,7 @@ error handle_reset_chunk(void)
 error handle_clear_buffer(void)
 {
   erase_grid_contents();
+  refresh_gui();
   return NO_ERR;
 }
 

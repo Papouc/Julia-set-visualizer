@@ -2,10 +2,12 @@
 #include "errors.h"
 #include "event_queue.h"
 #include "helpers.h"
+#include "keyboard.h"
 #include "local_processing.h"
 #include <assert.h>
 #include <pthread.h>
 #include <stdio.h>
+#include <time.h>
 
 static SDL_Window *win = NULL;
 
@@ -83,6 +85,68 @@ void xwin_redraw(int w, int h, unsigned char *img)
   SDL_UpdateWindowSurface(win);
 }
 
+void xwin_save_img(void)
+{
+  FILE *fp = NULL;
+
+  // create new stream -> check if zenity is available
+  fp = popen("zenity --version", "r");
+
+  if (fp == NULL)
+  {
+    fprintf(stderr, "Failed to open file save dialog :D!\n");
+    pclose(fp);
+    return;
+  }
+
+  // zenity exists
+  pclose(fp);
+  fp = popen("zenity --file-selection --save --directory", "r");
+
+  // read filepath from the opened stream
+  char folder_path[PATH_LEN_LIMIT];
+  char *result = fgets(folder_path, PATH_LEN_LIMIT, fp);
+  pclose(fp);
+
+  if (result != NULL && win != NULL)
+  {
+    if (strlen(folder_path) + FILENAME_LEN >= PATH_LEN_LIMIT)
+    {
+      fprintf(stderr, "Chosen path is too long :D\n");
+      return;
+    }
+
+    // prepare full filepath (time memory is static, no need to free)
+    time_t t = time(NULL);
+    struct tm *time = localtime(&t);
+
+    // format time into string
+    char time_str[TIME_FORMAT_LET];
+    strftime(time_str, sizeof(time_str), "%H_%M_%S", time);
+
+    // get length till first newline and replace the pos with null termination char
+    // thus remove newline
+    folder_path[strcspn(folder_path, "\n")] = '\0';
+
+    char *filepath = strcat(folder_path, "/");
+    filepath = strcat(folder_path, time_str);
+    filepath = strcat(folder_path, ".png");
+
+    // create surface from current window view + save it to PNG
+    SDL_Surface *surface = SDL_GetWindowSurface(win);
+    int save_result = IMG_SavePNG(surface, filepath);
+
+    if (save_result != IMG_SAVE_SUCCESS)
+    {
+      fprintf(stderr, "Failed to save the image :D!\n");
+    }
+    else
+    {
+      fprintf(stdout, "Succesfully saved to: %s :D!\n", filepath);
+    }
+  }
+}
+
 void *xwin_poll_events(void *)
 {
   error *err_code = (error *)safe_malloc(sizeof(error));
@@ -129,6 +193,9 @@ void *xwin_poll_events(void *)
         values_x[records] = event.motion.xrel;
         values_y[records] = event.motion.yrel;
         records++;
+        break;
+      case SDL_KEYDOWN:
+        handle_common_keys(event);
         break;
       default:
         break;
@@ -181,4 +248,55 @@ void request_zoom(int zoom_dir)
   ev_zoom.data.param = zoom_dir;
 
   queue_push(ev_zoom);
+}
+
+void handle_common_keys(SDL_Event sdl_ev)
+{
+  // process keys send to SDL window
+  // using same keymap as terminal input
+  event new_event = { .type = EV_TYPE_NUM, .source = EV_KEYBOARD };
+
+  switch ((char)sdl_ev.key.keysym.sym)
+  {
+    case GET_VERSION_KEY:
+      new_event.type = EV_GET_VERSION;
+      break;
+    case SET_PARAMS_KEY:
+      new_event.type = EV_SET_COMPUTE;
+      break;
+    case RUN_COMPUTE_KEY:
+      new_event.type = EV_COMPUTE;
+      break;
+    case ABORT_COMPUTE_KEY:
+      new_event.type = EV_ABORT;
+      break;
+    case RESET_CID_KEY:
+      new_event.type = EV_RESET_CHUNK;
+      break;
+    case CLEAR_BUFFER_KEY:
+      new_event.type = EV_CLEAR_BUFFER;
+      break;
+    case REDRAW_WINDOW_KEY:
+      new_event.type = EV_REFRESH;
+      break;
+    case COMPUTE_LOCALY_KEY:
+      new_event.type = EV_COMPUTE_CPU;
+      break;
+    case SAVE_IMG_KEY:
+      new_event.type = EV_SAVE_IMG;
+      break;
+    case EXIT_KEY:
+      new_event.type = EV_QUIT;
+      break;
+  }
+
+  if (new_event.type != EV_TYPE_NUM)
+  {
+    queue_push(new_event);
+  }
+
+  if (new_event.type == EV_QUIT)
+  {
+    signal_quit();
+  }
 }
